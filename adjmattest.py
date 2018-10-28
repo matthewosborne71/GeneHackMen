@@ -55,8 +55,23 @@ def remove_stops_file(filepath):
     print("Removed stops")
     return(datafile)
 
+def remove_stops_file2(filepath):
+    datafile = pd.read_csv(filepath)
+    new_column_number = len(datafile.columns)
+    tweets_list = datafile['Tweet']
+    filtered_tweets_list = []
+    for tweet in tweets_list:
+        filtered_tweet = remove_stops(tweet, stop_words_no_twitter_words)
+        filtered_tweets_list.append(filtered_tweet)
+    new_tweet_list_column_values = pd.Series(filtered_tweets_list)
+    datafile.insert(loc=new_column_number, column='filtered_tweet', value = new_tweet_list_column_values)
+    newfilename = filepath.replace('.csv','')
+    datafile.to_csv(newfilename + "filtered.csv", index = False)
+    print("Removed stops")
+    return(datafile)
+
 def adj_matrix(dffiltered):
-    wordlist = []
+    wordlist0 = []
     thresh = raw_input("Input threshhold: ")
     threshhold = int(float(thresh))
     fil_tweet_list = dffiltered['filtered_tweet']
@@ -65,9 +80,10 @@ def adj_matrix(dffiltered):
     print(index)
     for tweet in fil_tweet_list:
         for w in tweet:
-            wordlist.append(w)
+            wordlist0.append(w)
     countlistnum = []
     countlistword = []
+    wordlist = random.sample(wordlist0, 300000)
     print(len(wordlist))
     wordset = set(wordlist)
     listwordset = list(wordset)
@@ -91,7 +107,7 @@ def adj_matrix(dffiltered):
         ftl[j] = temp
     del dffiltered['filtered_tweet']
     dffiltered.insert(loc=index, column='key_words', value = ftl)
-    randomlist = random.sample(ftl,2000) #2000 random tweets chosen, might need fewer though
+    randomlist = random.sample(ftl,3000) #2000 random tweets chosen, might need fewer though
     M = []
     for w1 in countlistword:
         templist = []
@@ -114,8 +130,74 @@ def adj_matrix(dffiltered):
         new = [float(x)/float(e) for x in temp2]
         NormM.append(new)
     AdMat2 = pd.DataFrame(data = {'rows':NormM,'words':countlistword,'index_count':MaxList})
-    AdMat2.to_csv("AdjacencyMatrix.cvs",index = False)
+    AdMat2.to_csv("AdjacencyMatrix.csv",index = False)
     return(dffiltered)
+
+def keywords(dffiltered):
+    popular = dffiltered.loc[dffiltered['IsRT'] == False]
+    popular_tweet_list = popular['Tweet']
+    wordlist = []
+    thresh = raw_input("Input threshhold: ")
+    threshhold = int(float(thresh))
+    fil_tweet_list = popular['filtered_tweet']
+    cols = dffiltered.columns.tolist()
+    index = cols.index('filtered_tweet')
+    print(index)
+    for tweet in fil_tweet_list:
+        for w in tweet:
+            wordlist.append(w)
+    countlistnum = []
+    countlistword = []
+    print(len(wordlist))
+    wordset = set(wordlist)
+    listwordset = list(wordset)
+    print(len(listwordset))
+    for w in listwordset:
+        tempcount = wordlist.count(w)
+        if tempcount>threshhold:
+            countlistnum.append(tempcount)
+            countlistword.append(w)
+    print(len(countlistword))
+    print(countlistword)
+
+def keywords_time(dffiltered, tcdf):
+    popular0 = dffiltered.loc[dffiltered['IsRT'] == False]
+    popular_words_column = []
+    for time in tcdf['Time']:
+        popular_words_list = []
+        popular = popular0.loc[popular0['Time'] == time]
+        popular_tweet_list = popular['Tweet']
+        print(len(popular_tweet_list))
+        threshhold = 0.2*len(popular_tweet_list)
+        wordlist = []
+        fil_tweet_list = popular['filtered_tweet']
+        cols = dffiltered.columns.tolist()
+        index = cols.index('filtered_tweet')
+        print(index)
+        for tweet in fil_tweet_list:
+            for w in tweet:
+                wordlist.append(w)
+        countlist = []
+        print(len(wordlist))
+        wordset = set(wordlist)
+        listwordset = list(wordset)
+        print(len(listwordset))
+        for w in listwordset:
+            tempcount = wordlist.count(w)
+            if tempcount>threshhold:
+                countlist.append((w,tempcount))
+        print(len(countlist))
+        print(countlist)
+        countlist.sort(key=itemgetter(1))
+        for (w,n) in countlist:
+            if w > len(countlist)-5:
+                popular_words_list.append(w)
+        popular_words_column.append(popular_words_list)
+    #make new column in dataframe with popular_words_list
+    #new_column = pd.Series(popular_words_column)
+    tcdf['top_words']=popular_words_column
+    return(tcdf)
+
 
 
 #input time in UTC (eg "2018-10-27 17:56:41") as a string and convert to datetime
@@ -142,5 +224,5 @@ def time_to_datetime_file(filepath):
     return(datafile)
 
 
-df = remove_stops_file("Data/PittsburghPull_Retweets.csv")
+df = remove_stops_file("PittsburghPull_Retweets.csv")
 adj_matrix(df)
