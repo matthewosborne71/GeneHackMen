@@ -107,7 +107,7 @@ def adj_matrix(dffiltered):
         ftl[j] = temp
     del dffiltered['filtered_tweet']
     dffiltered.insert(loc=index, column='key_words', value = ftl)
-    randomlist = random.sample(ftl,3000) #2000 random tweets chosen, might need fewer though
+    randomlist = random.sample(ftl,2000) #2000 random tweets chosen, might need fewer though
     M = []
     for w1 in countlistword:
         templist = []

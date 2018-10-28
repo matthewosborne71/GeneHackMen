@@ -4,6 +4,7 @@ import os
 import pandas as pd
 import datetime
 import random
+import itertools
 
 from nltk.corpus import stopwords
 from nltk.tokenize import word_tokenize
@@ -27,33 +28,43 @@ stop_words_no_twitter_words = set(stop_words_std).union(twitter_words)
 
 #input a sentence (as string) and return sentence with stopwords removed
 #as a list of strings, make choice of stopwords
-def remove_stops(sentence, stopword_list):
+def remove_stops(sentence):
+    sentence = str(sentence)
     sentence = sentence.lower()
     word_tokens = word_tokenize(sentence)
-    filtered_sentence = [w for w in word_tokens if not w in stopword_list]
+    filtered_sentence = [w for w in word_tokens if not w in stop_words_no_twitter_words]
     filtered_sentence = []
     for w in word_tokens:
-        if w not in stopword_list:
+        if w not in stop_words_no_twitter_words:
             filtered_sentence.append(w)
-    return(filtered_sentence)
+    return filtered_sentence
 
 
-path = r"C:\\Users\\Matthew Osborne\\Documents\\python_code\\GeneHackMen\\Data\\"
-Extension = r"PittsburghData\\"
+path = "/Users/alexbeckwith/Desktop/HACKOHIO/"
+Extension = ""
 
-TweetDF = pd.read_csv(path+Extension+"PittsburghRounded.csv")
-Counts = pd.read_csv(path + Extension + "PittsburghBinCounts.csv")
+TweetDF = pd.read_csv(path+Extension+"LakersSpursRounded.csv")
+Counts = pd.read_csv(path + Extension + "LakersSpursBinCounts.csv")
 
 TweetDF = TweetDF[['Time','Tweet']]
 TweetDF = TweetDF.drop_duplicates()
 
-Times = list(Counts.Times)
+Times = list(Counts.Time)
 
-Counts['TopFive'] = 0
+TopFive = []
 
+i = 1
 for time in Times:
-    Words = map(remove_stops,TweetDF.loc[TweetDF.Time == time,'Tweet'].values())
+    Words = map(remove_stops,TweetDF.loc[TweetDF.Time == time,'Tweet'].values)
+    #Words = itertools.chain.from_iterable(Words)
+    temp = []
+    for item in Words:
+        temp = temp + item
+    Words = pd.DataFrame(temp,columns = ['Word'])
 
-    TopFiveWords = list(Words.value_counts.index[0:5])
 
-Counts.to_csv(path+Extension+"Test.csv",index=False)
+    TopFiveWords = list(Words['Word'].value_counts().index[0:10])
+    TopFive.append(TopFiveWords)
+
+Counts['TopFive'] = TopFive
+Counts.to_csv(path+Extension+"TopFive.csv",index=False)
