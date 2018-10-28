@@ -1,2 +1,4 @@
 *.pyc
 GetAPICred.py
+*.csv
+*.zip
